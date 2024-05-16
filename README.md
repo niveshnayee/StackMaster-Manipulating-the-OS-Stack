@@ -1,239 +1,56 @@
-﻿## CS 416 + CS 518 Project 1: Stacks and Basics (Warm-up Project)
-### Due: 4th October, 2023, Time: 8:00 pm ET
-### Points: 100 (5% of the overall course points.)
 
-This simple warm-up project will help you recall basic systems programming
-before the second project. This project's first part will help you recollect
-how stacks work. In part 2, you will write functions for simple bit
-manipulations. In part 3, you will use Linux pThread library to write a simple
-multi-threaded program. We have given three code files,  *stack.c*,
-*threads.c*, *bitops.c*, for completing the project.
+# Rutgers University CS416 Fall 2023 Operating Systems Project 1 Lab Report
 
-**PLEASE NOTE**: *We will perform sophisticated plagiarism checks on
-all projects submitted throughout the semester. We will compare your
-submission with those of other students from this semester, and also
-submissions from students across several previous offerings of this
-course. Please abide by Rutgers academic integrity
-policies. Consequences of violation range from failing the course to
-separation from your degree program. If you are ever in doubt, please
-ask us first.*
+### October 4th 2023
 
-### Part 1: Signal Handler and Stacks (35 points)
-In this part, you will learn about signal handler and stack manipulation and
-also write a description of how you changed the stack.
-
-#### 1.1 Description
-
-In the skeleton code (*stack.c*), in the *main()* function, look at the line
-that dereferences memory address 0.  This statement will cause a segmentation
-fault.
-
-```
-r2 = *( (int *) 0 );
-```
-The first goal is to handle the segmentation fault by installing a signal
-handler in the main function (*marked as Part 1 - Step 1 in stack.c*). If you
-register the following function correctly with the segmentation handler, Linux
-will first run your signal handler to give you a chance to address the segment
-fault.
-
-```
-**void signal_handle(int signalno)**
-```
-
-**Goal:** In the signal handler, you must make sure the segmentation fault does
-not occur a second time. To achieve this goal, you must change the stack frame
-of the main function; else, Linux will attempt to rerun the offending
-instruction after returning from the signal handler. Specifically, you must
-change the program counter of the caller such that the statement
-*r2 = r2 + 1 * 30;* after the offending instruction
-gets executed. No other shortcuts are acceptable for this assignment.
-
-**More details:** When your code hits the segment fault, it asks the OS what to
-do. The OS notices you have a signal handler declared, so it hands the reins
-over to your signal handler. In the signal handler, you get a signal number -
-signalno as input to tell you which type of signal occurred. That integer is
-sitting in the stored stack of your code that had been running. If you grab the
-address of that int, you can then build a pointer to your code's stored stack
-frame, pointing at the place where the flags and signals are stored. You can
-now manipulate ANY value in your code's stored stack frame. Here are the
-suggested steps:
-
-Step 2. Dereferencing memory address 0 will cause a segmentation fault. Thus,
-you also need to figure out the length of this bad instruction.
-
-Step 3. According to x86 calling convention, the program counter is pushed on
-stack frame before the subroutine is invoked. So, you need to figure out where
-is the program counter located on stack frame. (Hint, use GDB to show stack)
-
-Step 4. Construct a pointer inside fault hander based on signalno,
-pointing it to the program counter by incrementing the offset you figured out
-in Step 3. Then add the program counter by the length of the offending instruction 
-you figured out in Step 1.
-
-#### 1.2 Compiling for  32-bit (-m32)
-To reduce the project's complexity, please compile the *stack.c* for
-32-bit bypassing pass an additional flag to your gcc (*-m32*). 
-The 32-bit compilation makes it a bit easier because, in an
-x86 32-bit mode, the function arguments are always pushed to the stack before
-the local variables, making it easier to locate *main()'s* program counter.
-
-#### 1.3 Desired Output
-    handling segmentation fault!
-    result after handling segfault...
-
-#### 1.4 Report
-Please submit a report that answers the following question. Without the report, you will not receive points for this part.
-1. What are the contents in the stack? Feel free to describe your understanding.
-2. Where is the program counter, and how did you use GDB to locate the PC?
-3. What were the changes to get the desired result?
+**Nivesh Nayee: nn395**  
 
 
-#### 1.5 Tips and Resources
+## Part 1: Signal Handler and Stacks
 
-- Man Page of Signal: http://www.man7.org/linux/man-pages/man2/signal.2.html
-- Basic GDB tutorial: http://www.cs.cmu.edu/~gilpin/tutorial/ 
+### 1. What are the contents in the stack? Feel free to describe your understanding.
 
+- The stack contains parameters, local variables, return address, and saved registers. Additional local variables can be added to the stack as the function runs. When the function is finished, the stack is "popped," which removes the function's parameters and local variables and ensures that the program can keep track of function calls and their associated data in a structured way.
 
-### Part 2: Bit Manipulation (35 points)
+- Each Process gets their own stack frame. There are two pointers ESP (Extended Stack Pointer) and EBP (Extended Base Pointer) where ESP points to the top of the stack, which is the memory location of the most recently pushed data and EBP points to the base of the current stack frame. EBP provides a reference point for accessing function parameters and local variables within the current function. Stack frames start from 0 level and grow as the function calls happen.
 
-#### 2.1 Description
-Understanding how to manipulate bits is an important part of systems/OS
-programming and is required for subsequent projects. As a first step towards
-getting used to bit manipulation, you will write simple functions to extract
-and set bits. We have provided a template file **bitops.c** 
-Setting a bit refers to updating a bit to 1 if the bit is 0. Clearing a 
-bit refers to changing a bit with 1 to 0. 
+### 2. Where is the program counter, and how did you use GDB to locate the PC?
 
-##### 2.1.1 Extracting top order bits
-Your first task is to write a program to find the top-order bits by completing
-the  *get_top_bits()* function. For example, let's assume the global variable
-*myaddress* is set to 4026544704. Now let's say you have to extract just the
-top (outer) 4 bits (1111), which is decimal 15.  Your function
-*get_top_bits()* that takes the value of *myaddress* and the number of bits
-(*GET_BIT_INDEX*) to extract as input arguments and would return 15 as a value.
+- Program counters hold the next instruction address to be executed and In GDB, we can find it using the `info register eip` command or `info frame` command. EIP (Extended Instruction Pointer) is the register where the Program Counter is stored. With the given commands, we can see the stored address in the EIP register.
 
-##### 2.1.2 Setting and Getting bits at at specific index
-Setting bits at a specific index and extracting the bits is widely used across
-all OSes. You will be using these operations frequently in your projects 2, 3,
-and 4. You will complete two functions *set_bit_at_index()* and
-*get_bit_at_index().* Note that each byte has 8 bits.
+### 3. What were the changes to get the desired result?
 
-Before the *set_bit_at_index* function is called, we will allocate a bitmap
-array (i.e., an array of bits) as a character array, specified using the
-*BITMAP_SIZE* macro. For example, when the BITMAP_SIZE is set to 4, we can store 32
-bits (8 bits in a character element). The
-*set_bit_at_index* function passes the bitmap array and the index
-(SET_BIT_INDEX) at which a bit must be set. The *get_bit_at_index()* tests if a
-bit is set at a specific index.
+- I first determined the instruction address using the `layout split` command and calculated the instruction length. I then set a breakpoint at the main function's error line and the signal handler function, where I discovered all of the stack frames that had been generated after the segmentation fault error. Three levels of stack frames were present: main (0), kernel (1), and signal handler (3). I discovered the ESP and EBP for every stack frame. I used the command `x/20x address` to navigate to the location in the stack frame where the instruction address is stored. I calculated the difference between the signalno address and the return address (0xffffc1ec) after analyzing and discovering the return address. I combined that with the signalno address, which was 0x0000003C (60), using that difference. I added pointer with 0x0000003C by casting it as char and then casting back to int, I made signalno point to where the return address is stored. Then, I dereferenced the pointer to access the value stored at that location, incrementing the PC with the length I discovered earlier which was 5 which will change the instruction address to the next one. This way, after the signal handler function, the main function will check the stored return address which will give the updated one and will run the program with no error.
 
-So, if one allocates a bitmap array of 4 characters, bitmap[0] could refer to 
-byte 0, bitmap[1] could refer to byte 1, and so on. 
+## Part 2: Bit Manipulation
 
-Note, you will not be making any changes to the main function, but just the
-three functions, *get_top_bits()*, *set_bit_at_index()*,  and
-*get_bit_at_index()*.
+### 2.1.1: Extracting Top Order Bits
 
-When evaluating your projects, we might change the values *myaddress* or other MACROS. 
-You don't have to worry about dealing with too many
-corner cases for this project (for example, setting myaddress or other MACROS
-to 0).
+For this part, we have used a relatively simple formula to extract the top bits.
 
-#### 2.2 Report
-In your report, describe how you implemented the bit operations. 
+- Let the number of top bits to be extracted = n.
+- We know that a 32 bit integer will be passed in to extract the n bits from. If we want the top n bits, then we don’t care about the remaining (32 - n) bits.
+- So in our algorithm we right shift the original value by (32 - n) bits. This truncates the rightmost (32 - n) bits and leaves us with the topmost n bits which have now been moved to the rightmost positions. Preceding the top n bits are (32 - n) zeroes. So returning this value will give us the value of the original top n bits.
 
+### 2.1.2: Setting and Getting Bits at a Specific Index
 
-### Part 3: pThread Basics (30 points)
-In this part, you will learn how to use Linux pthreads and update a 
-shared variable. We have given a skeleton code (*thread.c*). 
+For both getting and setting the bit, we first execute 3 instructions to make sure the requested index is in bounds, find the correct byte in the bitmap array, and then find the position of the requested bit in the specific byte.
 
-To use Linux pthread library, you must compile your C files by linking 
-to pthread library using *-lpthread* as a compilation option.
+1. `if(index>(BITMAP_SIZE*8))` //throw an error  
+   This line checks to make sure the index is in bounds of the bitmap array. If not, we will print an error message.
 
-#### 3.1 Description
-In the skeleton code, there is a global variable x, which is initialized to 0. 
-You are required to use pThread to create 4 threads to increment a global 
-variable. 
+2. `int bitmapIDX = (BITMAP_SIZE-1) - (index/8);`  
+   Here we are getting the byte of the specified index in the bitmap array. We take the BITMAP_SIZE-1, which gives us the highest index in the bitmap array. Subtracting Index/8 from this value will give us which byte to look into to set or get the specified bit since the lowest indices of the bitmap array correspond to the highest order bits of the bitmap array.
 
-Use *pthread_create* to create four worker threads and each of them will execute
-*add_counter*. Inside *add_counter*, each thread increments the global variable x 
-by *loop* times (e.g., 10000 times).
+3. `int bitPos = index % 8;`  
+   Here we are getting the specific position of the bit in a certain byte. Since each byte is 8 bits, we can simply do index%8 to see at which index the bit falls.
 
-After the worker threads finish incrementing the global variable, you must print the
-final value of x to the console. Remember, the main thread may terminate before
-the worker threads; avoid this by using *pthread_join* to let the main thread
-wait for the worker threads to finish before exiting.
+#### Setting the bit:
 
-*Because x is a shared variable, you need to synchronize across threads to guarantee that 
-each thread exclusively updates that shared variable.* 
-For synchronization, you can use pthread mutex (a locking mechanism, recollect from CS 214!). 
+`bitmap[bitmapIDX] |= (1 << bitPos);`  
+Here we are doing a bitwise ‘or” operation on the specified byte which we calculated in a previous step. The other operand in the bitwise or is `(1 << bitPos)`. This is an array of 7 zeroes with a ‘1’ at the bitPos index we had calculated in a previous step. By doing a bitwise ‘or’ operation with this 8 bit array of seven zeros and one ‘1’, we are only changing the bit at bitPos to ‘1’ if it was originally set to ‘0’.
 
-You can read more about using pthread mutex in the link [3]. In later lectures
-and projects, we will discuss how to use other complex synchronization methods. 
+#### Getting the bit:
 
-If you have implemented the thread synchronization correctly, the final value of 
-x would be 4 times the loop value. 
-
-*NOTE: When evaluating your projects, we will test your code for different loop 
-values.*
-
-#### 3.2 Tips and Resources
-- [1] pthread_create: http://man7.org/linux/man-pages/man3/pthread_create.3.html
-- [2] pthread_join: http://man7.org/linux/man-pages/man3/pthread_join.3.html
-- [3] pthread_mutex: https://man7.org/linux/man-pages/man3/pthread_mutex_lock.3p.html
-
-#### 3.3 Report
-You do not have to describe this part in the project report.
-
-
-
-## Project 1 Submission
-For submission, create a Zip file of your submission and upload to Canvas. 
-The zip file name should be **project1.zip**. The zip file must contain the 
-following files. Please note that the report file should be a PDF (please do not 
-submit word or text files).
-
-project1.zip  (in lower case)
-	(1) stack.c
-	(2) thread.c
-	(3) bitops.c
-	(4) report.pdf
-
-- Only **one group member** submits the code. But in your project report and at the
-  top of your code files, **add all group member names and NetID**, course number
-(CS 416 or CS 518), and the iLab machine you tested your code as a comment at
-the top of the code file.
-
-- Your code must work on one of the iLab machines. Your code must use the
-  attached C code as a base and the functions. Feel free to change the function
-signature for Part 2 if required.
-
-- **Cite your references:**  If you consulted resources 
-    other than the references listed in this document, or discussed
-    the project with people outside of your teammate and the course
-    staff, please note them here and describe the nature of your
-    consulation.
-
-
-## FAQs
-
-### Q1: Using signalno
-(1) Should we use and modify the address of signalno (or a local pointer to signalno)? 
-(2) Can we use other addresses (ie. the main function stack pointer)?
-
-#### A:
-
-1. Yes, we expect you to use signalno (though we prefer using signalno itself, using a local pointer to signalno in the handler does the same thing).
-2. No, you cannot. You should use **signalno as your pointer to the stack**, and subsequently, manipulate the stack.
-
-
-### Q2: Using Other Packages
-Can we use other packages such as asm.h to manipulate the registers?
-
-#### A:
-No, we expect you to use the packages included in the file. **The goal of the
-project is to understand the stack, learn how registers are stored on the
-stack, and using GDB to inspect stack frames** (as well as getting used to
-using it in general). Although using asm is one way of doing this, the solution
-we expect is not to through asm (or any other packages that we do not include),
-so a submission using this will have points deducted.
+`(bitmap[bitmapIDX] & (1 << bitPos)) >> bitPos`  
+Here we are getting the byte at the index we had calculated in the previous step, then doing a bitwise ‘and’ operation with a byte of all zeroes that contains one ‘1’ at the specified index. `(1 << bitPos)` gives us a byte of zeroes with a ‘1’ at the specified index because it right shifts a 1 to the bitPos we had calculated in a previous step. The bitwise and operation will zero out all the bits in our specified byte except the one at bitPos if it was originally set as 1. Through this method we are able to isolate the specified bit and check if it is 1 or not. We then right shift the specified bit to the lowest order position to return it as either 0 or 1, indicating whether or not the bit was set to 1.
